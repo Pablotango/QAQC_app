@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import base64  # Import the base64 module
 import seaborn as sns
+import plotly.express as px
+import plotly.graph_objs as go
 
 
 
@@ -160,6 +162,84 @@ def duplicates(df, dup_list):
     return plots, report_df  # Return list of matplotlib figures and report data frame
 
 
+def duplicates_px(df, dup_list):
+    ''' This function takes a clean df, and a list of samples. It returns a series of plots of duplicates'''
+    
+    plots = []  # List to store Plotly figures
+    report_data = []  # List to store report information
+    
+    # Filter df to include only samples in dup_list
+    df_dup = df[df['SampleID'].isin(dup_list)]
+    
+    # Iterate through the list of duplicates and plot
+    for sample in dup_list:
+        df_i = df_dup[df_dup['SampleID'] == sample].dropna(axis=1)
+        
+        x = df_i.iloc[[0], 2:]
+        y = df_i.iloc[[1], 2:]
+        
+        original = x.values.flatten()
+        duplicate = y.values.flatten()
+        
+        element_list = x.columns.tolist()
+        
+        # Create a Plotly figure
+        fig = go.Figure()
+        
+        # Scatter plot of original vs duplicate measurements
+        fig.add_trace(go.Scatter(x=original, y=duplicate, mode='markers', marker=dict(color='blue'), name='Duplicate vs Original'))
+        
+        # 1:1 line
+        fig.add_trace(go.Scatter(x=original, y=original, mode='lines', line=dict(color='gray', dash='dash'), name='1:1 line'))
+        
+        # ±15% error threshold lines
+        error_threshold = 0.15  # 15% error threshold
+        upper_threshold = [(1 + error_threshold) * x for x in original]
+        lower_threshold = [(1 - error_threshold) * x for x in original]
+        
+        fig.add_trace(go.Scatter(x=original, y=upper_threshold, mode='lines', line=dict(color='lightgray', width=0), fill='tonexty', showlegend=False))
+        fig.add_trace(go.Scatter(x=original, y=lower_threshold, mode='lines', line=dict(color='lightgray', width=0), fill='tonexty', showlegend=False))
+        
+        # Highlight dots outside the threshold in red
+        outside_threshold = (duplicate > upper_threshold) | (duplicate < lower_threshold)
+        fig.add_trace(go.Scatter(x=original[outside_threshold], y=duplicate[outside_threshold], mode='markers', marker=dict(color='red'), name='Outside Threshold'))
+        
+        # Layout customization
+        fig.update_layout(title=f'Scatter Plot of Duplicate vs Original Measurements for {sample}',
+                          xaxis_title='Original Measurements',
+                          yaxis_title='Duplicate Measurements',
+                          xaxis_tickangle=-45,
+                          showlegend=True,
+                          legend=dict(x=1.02, y=1.0, bgcolor='rgba(255, 255, 255, 0)', bordercolor='rgba(255, 255, 255, 0)'),
+                          margin=dict(l=0, r=0, t=50, b=0),
+                          hovermode='closest')
+        
+        # Create report
+        elements_outside = [element_list[i] for i in range(len(element_list)) if outside_threshold[i]]
+        report = f'Outside the ±15% error threshold: {elements_outside}'
+        
+        # Store report in report_data
+        report_data.append((sample, elements_outside))
+        
+        # Add report as annotation
+        fig.add_annotation(
+            x=0.5,
+            y=-0.25,
+            text=report,
+            showarrow=False,
+            font=dict(size=10),
+            align='center',
+            xref='paper',
+            yref='paper'
+        )
+        
+        # Append the figure to the list
+        plots.append(fig)
+        
+    # Convert report_data to a DataFrame
+    report_df = pd.DataFrame(report_data, columns=['SampleID', 'Outside the ±15% error threshold'])
+    
+    return plots, report_df  # Return list of Plotly figures and report data frame
 
 def norm_REE (df, coeff_dict):
     # Make a copy of the df to avoid modifying the original data
@@ -352,7 +432,31 @@ def df_blanks (df):
     else:
         st.write("The following elements returned values over the detection limit (positive): ", positive_columns, "Please check")
 
-
+def plot_blanks_px(df):
+    ''' This function takes a df and plots blanks'''
+    
+    df_blanks = df[df['ELEMENTS'] == 'Control Blank']
+    
+    # Replace NaN with 0
+    df_blanks = df_blanks.fillna(0)
+    
+    # Melt the DataFrame to long format for plotting
+    df_melted = df_blanks.melt(id_vars='ELEMENTS', var_name='element', value_name='Values')
+    
+    # Convert values to numeric
+    df_melted['Values'] = pd.to_numeric(df_melted['Values'])
+    
+    # Plot using Plotly Express
+    fig = px.line(df_melted, x='element', y='Values', title='Line Plot of Blanks for Elements', color='ELEMENTS',
+                  line_shape='linear', render_mode='svg', labels={'element': 'Elements', 'Values': 'Values'})
+    
+    # Customize layout
+    fig.update_layout(xaxis_tickangle=-45, yaxis_range=[-1, 1], legend_title='Blanks',
+                      legend=dict(x=1.02, y=1.0, bgcolor='rgba(255, 255, 255, 0)', bordercolor='rgba(255, 255, 255, 0)'),
+                      margin=dict(l=0, r=0, t=50, b=0))
+    
+    # Display the plot in Streamlit
+    st.plotly_chart(fig)
    
 
     
@@ -408,12 +512,12 @@ def main():
             dup_list = st.sidebar.multiselect('Select duplicates', df_d['SampleID'])
             
             if st.sidebar.checkbox('Plot of selected duplicates and report table', key = 'dup_plots'):
-                plots, report_df = duplicates(df, dup_list)  # Calling duplicates() to get plots
+                plots, report_df = duplicates_px(df, dup_list)  # Calling duplicates() to get plots
                 st.header('Plots of Duplicate Analysis')
                 
                 for plot in plots:
-                    st.pyplot(plot)  # Display each plot using st.pyplot()
-                    
+                    #st.pyplot(plot)  # Display each plot using st.pyplot()
+                    st.plotly_chart(plot)
                 st.write ("### Report")
                 st.dataframe(report_df)
                 
@@ -479,18 +583,8 @@ def main():
         st.sidebar.title ("Step 4 - Blanks")
         if st.sidebar.checkbox('Show me the blanks and report'):
             st.write("### These are the blanks in your batch")
-            plot_blanks(df0)
+            plot_blanks_px(df0)
             df_blanks(df0)
-        
-
-        
-            
-            
-            
-            
-            
-
-
     
         
 # Run the Streamlit app
