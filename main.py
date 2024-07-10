@@ -161,7 +161,6 @@ def duplicates(df, dup_list):
     
     return plots, report_df  # Return list of matplotlib figures and report data frame
 
-
 def duplicates_px(df, dup_list):
     ''' This function takes a clean df, and a list of samples. It returns a series of plots of duplicates'''
     
@@ -213,7 +212,9 @@ def duplicates_px(df, dup_list):
                           legend=dict(x=1.02, y=1.0, bgcolor='rgba(255, 255, 255, 0)', bordercolor='rgba(255, 255, 255, 0)'),
                           margin=dict(l=0, r=0, t=50, b=0),
                           hovermode='closest')
-        
+        # Update x-axis tick labels
+        fig.update_xaxes(tickvals=original, ticktext=element_list)
+
         # Create report
         elements_outside = [element_list[i] for i in range(len(element_list)) if outside_threshold[i]]
         report = f'Outside the ±15% error threshold: {elements_outside}'
