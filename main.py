@@ -467,7 +467,7 @@ NTGS_std_list = ['AS08JAW004','AS08JAW006', 'DW06LMG005']
 def main():
     
     
-    st.title("NTGS - Amazing QA/QC app")
+    st.title("NTGS - Amazing QA/QC app 0.1")
 
     # Sidebar - File upload and filtering options
     st.sidebar.title("Upload CSV file")
