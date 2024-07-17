@@ -583,11 +583,11 @@ def main():
                 st.write("### This is the NTGS Standards major oxides composition")
                 plot_oxides_line(df_s, NTGS_std)
                 
-        st.sidebar.title ("Step 4 - Blanks")
-        if st.sidebar.checkbox('Show me the blanks and report'):
-            st.write("### These are the blanks in your batch")
-            plot_blanks_px(df0)
-            df_blanks(df0)
+            st.sidebar.title ("Step 4 - Blanks")
+            if st.sidebar.checkbox('Show me the blanks and report'):
+                st.write("### These are the blanks in your batch")
+                plot_blanks_px(df0)
+                df_blanks(df0)
     
         
 # Run the Streamlit app
