@@ -559,7 +559,9 @@ def main():
                         st.write('#### This is the normalised data')
                         st.write(df_REE_n)
                         plot_REE_all(df_REE_n, NTGS_std)
-                        #
+                else:
+                    st.write ('There are no NTGS Standards')
+                    
                 if st.sidebar.checkbox("You do not have a reference? No worries, just use our internal reference (reference)"):
                     st.sidebar.title('Plot normalised REE patterns')
                     df_REE = df_s[df_s['SampleID'].isin(options)]
