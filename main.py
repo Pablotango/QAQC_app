@@ -535,7 +535,7 @@ def main():
             df_s = intertek_samples(df)
             options = df_s[df_s['SampleID'].isin(NTGS_std_list)]['SampleID'].tolist()
 
-            if options:
+            if options is not None:
                 NTGS_std = st.sidebar.multiselect('Select the NTGS Standards', options = options)
                 st.sidebar.title("Upload REE reference table or choose internal reference")
                 uploaded_REE = st.sidebar.file_uploader("Upload Normalising REE table as CSV file", type=['csv'])
