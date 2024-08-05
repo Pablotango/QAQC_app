@@ -16,12 +16,12 @@ import plotly.graph_objs as go
 
 # Function to load CSV file and return a DataFrame
 
-@st.cache
+
 def load_data(file):
     df = pd.read_csv(file)
     return df
 
-@st.cache
+
 def intertek_clean(df):
     '''This function cleans an Intertek csv by:
         changing column names,
@@ -388,6 +388,8 @@ tab_titles = ["Data cleaning",
               "Report"]
 
 tabs = st.tabs(tab_titles)
+
+
 with tabs[0]:
     
     st.title("Upload CSV file")
@@ -407,7 +409,6 @@ with tabs[0]:
         st.write ('##### For example -1 ppm Au is now 0.5 ppm Au')
         df = intertek_clean(df0)
         st.write(df.head(10))
-        
         df_d = intertek_dup(df)
         
         if st.checkbox('Export duplicated samples (only) to CSV - Ready for IoGAS'):
@@ -422,71 +423,76 @@ with tabs[0]:
             csv = df_s.to_csv(index=False)
             b64 = base64.b64encode(csv.encode()).decode()  # B64 encoding
             href = f'<a href="data:file/csv;base64,{b64}" download="Sample_data_{new_batch}">Download CSV File</a>'
-            st.markdown(href, unsafe_allow_html=True)   
-            
+            st.markdown(href, unsafe_allow_html=True)
+
+        
+        
+        
+        
 with tabs[1]:
     st.title ("Duplicates")
     
-    dup_list = st.multiselect('Select duplicates', df_d['SampleID'])
+    if uploaded_file is not None:
+        dup_list = st.multiselect('Select duplicates', df_d['SampleID'])
     
-    if st.checkbox('Plot of selected duplicates and report table', key = 'dup_plots'):
-        plots, report_df = duplicates_px(df, dup_list)  # Calling duplicates() to get plots
-        st.header('Plots of Duplicate Analysis')
-        st.subheader('You can zoom in to see results')
-        
-        for plot in plots:
-            #st.pyplot(plot)  # Display each plot using st.pyplot()
-            st.plotly_chart(plot)
-        st.write ("### Report")
-        st.dataframe(report_df)
-        
-        if st.checkbox('Export report as csv'):
-            # Export report_df to CSV and provide download link
-            csv = report_df.to_csv(index=False)
-            b64 = base64.b64encode(csv.encode()).decode()  # Base64 encoding for download link
-            href = f'<a href="data:file/csv;base64,{b64}" download="Duplicates_report_{new_batch}">Download CSV File</a>'
-            st.markdown(href, unsafe_allow_html=True)
+        if st.checkbox('Plot of selected duplicates and report table', key = 'dup_plots'):
+            plots, report_df = duplicates_px(df, dup_list)  # Calling duplicates() to get plots
+            st.header('Plots of Duplicate Analysis')
+            st.subheader('You can zoom in to see results')
+            
+            for plot in plots:
+                #st.pyplot(plot)  # Display each plot using st.pyplot()
+                st.plotly_chart(plot)
+            st.write ("### Report")
+            st.dataframe(report_df)
+            
+            if st.checkbox('Export report as csv'):
+                # Export report_df to CSV and provide download link
+                csv = report_df.to_csv(index=False)
+                b64 = base64.b64encode(csv.encode()).decode()  # Base64 encoding for download link
+                href = f'<a href="data:file/csv;base64,{b64}" download="Duplicates_report_{new_batch}">Download CSV File</a>'
+                st.markdown(href, unsafe_allow_html=True)
 
 with tabs[2]:
     st.title ("NTGS Standards REE")
-    
-    df_s = intertek_samples(df)
-    #options = df_s[df_s['SampleID'].isin(NTGS_std_list)]['SampleID'].tolist()
-    # Create a regex pattern from the list
-    pattern = '|'.join([f'{word}' for word in NTGS_std_list])
-    # Filter DataFrame based on the pattern
-    options = df_s[df_s['SampleID'].str.contains(pattern, case=False, regex=True)]['SampleID'].tolist()
-    
-    
-    if not options:
-        st.write('Seems like there are no NTGS standards in this batch')
-    
-    else:
-        st.write('This is what we found as NTGS standard:')
-        st.write(options)
+    if uploaded_file is not None:
+        df_s = intertek_samples(df)
+        #options = df_s[df_s['SampleID'].isin(NTGS_std_list)]['SampleID'].tolist()
+        # Create a regex pattern from the list
+        pattern = '|'.join([f'{word}' for word in NTGS_std_list])
+        # Filter DataFrame based on the pattern
+        options = df_s[df_s['SampleID'].str.contains(pattern, case=False, regex=True)]['SampleID'].tolist()
         
-        st.write('### At this stage we will use (reference) as REE normalisig values:')												   
+        
+        if not options:
+            st.write('Seems like there are no NTGS standards in this batch')
+        
+        else:
+            st.write('This is what we found as NTGS standard:')
+            st.write(options)
+            
+            st.write('### At this stage we will use (reference) as REE normalisig values:')												   
+        
+            coeff_ref = {'La_ppm': {0: 0.245}, 'Ce_ppm': {0: 0.638}, 'Pr_ppm': {0: 0.0964}, 'Nd_ppm': {0: 0.474}, 'Sm_ppm': {0: 0.154}, 'Eu_ppm': {0: 0.058}, 'Gd_ppm': {0: 0.204}, 'Tb_ppm': {0: 0.0375}, 'Dy_ppm': {0: 0.254}, 'Ho_ppm': {0: 0.0567}, 'Er_ppm': {0: 0.166}, 'Tm_ppm': {0: 0.0256}, 'Yb_ppm': {0: 0.165}, 'Lu_ppm': {0: 0.0254}}
+            st.write(pd.DataFrame(coeff_ref).head())
+        
+        
+            if options is not None:
+                #NTGS_std = st.multiselect('Select the NTGS Standards from this batch', options = options)
+        
     
-        coeff_ref = {'La_ppm': {0: 0.245}, 'Ce_ppm': {0: 0.638}, 'Pr_ppm': {0: 0.0964}, 'Nd_ppm': {0: 0.474}, 'Sm_ppm': {0: 0.154}, 'Eu_ppm': {0: 0.058}, 'Gd_ppm': {0: 0.204}, 'Tb_ppm': {0: 0.0375}, 'Dy_ppm': {0: 0.254}, 'Ho_ppm': {0: 0.0567}, 'Er_ppm': {0: 0.166}, 'Tm_ppm': {0: 0.0256}, 'Yb_ppm': {0: 0.165}, 'Lu_ppm': {0: 0.0254}}
-        st.write(pd.DataFrame(coeff_ref).head())
-    
-    
-        if options is not None:
-            #NTGS_std = st.multiselect('Select the NTGS Standards from this batch', options = options)
-    
-
-            #if st.checkbox("You do not have REE normalising values? No worries, just use our internal reference (reference)"):
-            st.subheader('Plot normalised REE patterns')
-            df_REE = df_s[df_s['SampleID'].isin(options)]
-            df_REE_i = norm_REE_df(df_REE)
-                        
-            if st.checkbox('Plot REE _ all in one plot'): 
-                st.write('#### This is the normalised data after (reference)')                   
-                st.write(df_REE_i)
-                plot_REE_all(df_REE_i)
-                
-            # if st.checkbox('Plot REE from samples in this batch'):
-            #     plots = plot_REE(df_REE_i, NTGS_std)
+                #if st.checkbox("You do not have REE normalising values? No worries, just use our internal reference (reference)"):
+                st.subheader('Plot normalised REE patterns')
+                df_REE = df_s[df_s['SampleID'].isin(options)]
+                df_REE_i = norm_REE_df(df_REE)
+                            
+                if st.checkbox('Plot REE _ all in one plot'): 
+                    st.write('#### This is the normalised data after (reference)')                   
+                    st.write(df_REE_i)
+                    plot_REE_all(df_REE_i)
+                    
+                # if st.checkbox('Plot REE from samples in this batch'):
+                #     plots = plot_REE(df_REE_i, NTGS_std)
 with tabs[3]:
     st.title ("Blanks")
     
