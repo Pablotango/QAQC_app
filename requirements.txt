@@ -4,4 +4,3 @@ streamlit
 matplotlib
 seaborn
 plotly
-base64
