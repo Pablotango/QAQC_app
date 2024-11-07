@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Thu Aug  8 16:41:07 2024
+
+@author: pfari
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Mon Aug  5 11:13:44 2024
 
 @author: faria
@@ -129,8 +136,8 @@ def duplicates_px(df, dup_list):
         # 1:1 line
         fig.add_trace(go.Scatter(x=original, y=original, mode='lines', line=dict(color='gray', dash='dash'), name='1:1 line'))
         
-        # ±15% error threshold lines
-        error_threshold = 0.25  # 15% error threshold
+        # ±25% error threshold lines
+        error_threshold = 0.15  # 15% error threshold
         upper_threshold = [(1 + error_threshold) * x for x in original]
         lower_threshold = [(1 - error_threshold) * x for x in original]
         
@@ -150,12 +157,16 @@ def duplicates_px(df, dup_list):
                           legend=dict(x=1.02, y=1.0, bgcolor='rgba(255, 255, 255, 0)', bordercolor='rgba(255, 255, 255, 0)'),
                           margin=dict(l=0, r=0, t=50, b=0),
                           hovermode='closest')
+        # Update x and y axes to logarithmic scale
+        fig.update_xaxes(type='log')
+        fig.update_yaxes(type='log')
+        
         # Update x-axis tick labels
         fig.update_xaxes(tickvals=original, ticktext=element_list)
 
         # Create report
         elements_outside = [element_list[i] for i in range(len(element_list)) if outside_threshold[i]]
-        report = f'Elements outside the ±25% error threshold: {elements_outside}'
+        report = f'Elements outside the ±15% error threshold: {elements_outside}'
         
         # Store report in report_data
         report_data.append((sample, elements_outside))
@@ -176,7 +187,7 @@ def duplicates_px(df, dup_list):
         plots.append(fig)
         
     # Convert report_data to a DataFrame
-    report_df = pd.DataFrame(report_data, columns=['SampleID', 'Elements outside the ±25% error threshold'])
+    report_df = pd.DataFrame(report_data, columns=['SampleID', 'Elements outside the ±15% error threshold'])
     
     return plots, report_df  # Return list of Plotly figures and report data frame
 
@@ -355,6 +366,13 @@ def plot_blanks_px(df):
     # Replace NaN with 0
     df_blanks = df_blanks.fillna(0)
     
+    for i in df_blanks.columns[1:]: # Start from the second column
+    # Convert the column to numeric
+           df_blanks[i] = pd.to_numeric(df_blanks[i], errors='coerce')
+           
+           # Replace non-digit characters by ''
+           df_blanks.replace(r'\D', '', regex=True)
+    
     # Melt the DataFrame to long format for plotting
     df_melted = df_blanks.melt(id_vars='ELEMENTS', var_name='element', value_name='Values')
     
@@ -468,7 +486,7 @@ with tabs[2]:
             st.write('Seems like there are no NTGS standards in this batch')
         
         else:
-            st.write('This is what we found as NTGS standard:')
+            st.write('NTGS standards found:')
             st.write(options)
             
             st.write('### At this stage we will use (reference) as REE normalisig values:')												   
